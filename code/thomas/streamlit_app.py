@@ -19,23 +19,15 @@ import os
 import pandas as pd
 import numpy as np
 
+# """
+# To run:
+# streamlit run streamlit_app.py
+# """
+
 def get_img_as_base64(file_path):
     with open(file_path, "rb") as f:
         data = f.read()
     return base64.b64encode(data).decode()
-
-
-def data_sources():
-    # Data Sources
-    st.divider()
-    st.markdown("""
-        <div style="padding:10px;border-radius:10px">
-            <h2 style="color:white;text-align:center;">Data Sources</h2>
-        </div>
-        """, unsafe_allow_html=True)
-    st.markdown("""- US Census
-- MMG
-- Intuition""")
 
 
 def key_visualizations():
@@ -49,22 +41,34 @@ def key_visualizations():
     st.bar_chart([6, 1, 1, 7, 3])
 
 
+def data_sources():
+    # Data Sources
+    st.markdown("""
+        <div style="padding:10px;border-radius:10px">
+            <h2 style="color:white;text-align:center;">Data Sources</h2>
+        </div>
+        """, unsafe_allow_html=True)
+    st.markdown("""- US Census <- hyperlink and put paragraph explaining it/why it helps us answer our research questions
+- MMG <- hyperlink and put paragraph explaining it (had to request it Feeding America Research Team)
+- Intuition""")
+    key_visualizations()
+
+
 def research_questions():
     # Research Questions
-    st.divider()
     st.markdown("""
         <div style="padding:10px;border-radius:10px">
             <h2 style="color:white;text-align:center;">Research Questions</h2>
         </div>
         """, unsafe_allow_html=True)
-    st.markdown("""- What predictors best correlate food insecurity?
+    st.markdown("""- What predictors best correlate food insecurity? <- figure this out agfter we make models (put little paragraph why its import and what data we need to can get us there)
 - What model can best predict food insecurity?
-- What are the most effective interventions to reduce food insecurity?""")
+- What are the most effective interventions to reduce food insecurity?
+- Have the causes of food insecurity changed over time?""")
 
 
 def models():
     # Models
-    st.divider()
     st.markdown("""
         <div style="padding:10px;border-radius:10px">
             <h2 style="color:white;text-align:center;">Machine Learning Models</h2>
@@ -111,8 +115,9 @@ def models():
         st.line_chart([8, 7, 6, 5, 4, 3])
 
 
-def calculator():
+def calculator(): # Home page
     # Interactive ML Models
+    research_questions()
     st.divider()
     st.markdown("""
         <div style="padding:10px;border-radius:10px">
@@ -139,18 +144,12 @@ def home_page():
         """, unsafe_allow_html=True)
     
     # Tabs
-    c, ds, kv, rq, m = st.tabs(["Calculator", 
-                                "Data Sources", 
-                                "Key Visualizations", 
-                                "Research Questions", 
-                                "Models"], default="Calculator")
+    c, ds, m = st.tabs(["Home", 
+                        "Data Sources", 
+                        "Models"], default="Home")
 
     with ds:
         data_sources()
-    with kv:
-        key_visualizations()
-    with rq:
-        research_questions()
     with m:
         models()
     with c:
