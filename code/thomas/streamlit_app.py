@@ -48,9 +48,14 @@ def data_sources():
             <h2 style="color:white;text-align:center;">Data Sources</h2>
         </div>
         """, unsafe_allow_html=True)
-    st.markdown("""- US Census <- hyperlink and put paragraph explaining it/why it helps us answer our research questions
-- MMG <- hyperlink and put paragraph explaining it (had to request it Feeding America Research Team)
-- Intuition""")
+    st.markdown("""**[US Census](https://api.census.gov/data/2022/acs/acs5/variables.html)**
+                
+insert paragraph explaining it/why it helps us answer our research questions
+                
+[Map the Meal Gap](https://www.feedingamerica.org/research/map-the-meal-gap/by-county)
+
+inser paragraph explaining it/why it helps us answer our research questions
+                """)
     key_visualizations()
 
 
