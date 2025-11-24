@@ -15,6 +15,9 @@ except:
     import sys
     subprocess.check_call([sys.executable, "-m", "pip", "install", "base64"])
     import base64
+from model.nn_webpage import nn_webpage
+from pages.data_viz import data_viz
+from pages.kmeans import kmeans_page
 import os
 import pandas as pd
 import numpy as np
@@ -38,7 +41,7 @@ def key_visualizations():
             <h2 style="color:white;text-align:center;">Key Visualizations</h2>
         </div>
         """, unsafe_allow_html=True)
-    st.bar_chart([6, 1, 1, 7, 3])
+    data_viz()
 
 
 def data_sources():
@@ -84,9 +87,9 @@ def models():
     root = '/home/blalo/uva/pred_modeling_i/ml_group_project_fall_2025/code/thomas/assets/'
     model_names = ["Linear Model", "KNN", "K-Means", "PCA", "Neural Network"]
     model_images = [
-        os.path.join(root, "linear_model.jpg"),
-        os.path.join(root, "knn_model.jpg"),
-        os.path.join(root, "kmeans_model.png"),
+        os.path.join(root, "linear_model.jpg"), #0
+        os.path.join(root, "knn_model.jpg"), #1
+        os.path.join(root, "kmeans_model.png"), #2
         os.path.join(root, "pca_model.png"),
         os.path.join(root, "neural_network_model.jpg")
     ]
@@ -109,7 +112,7 @@ def models():
 
     elif selected_model == model_images[2]:
         st.subheader("K-Means Clustering Results")
-        st.area_chart([9, 4, 5, 1])
+        kmeans_page()
 
     elif selected_model == model_images[3]:
         st.subheader("PCA Results")
@@ -117,7 +120,7 @@ def models():
 
     elif selected_model == model_images[4]:
         st.subheader("Neural Network Results")
-        st.line_chart([8, 7, 6, 5, 4, 3])
+        nn_webpage()
 
 
 def calculator(): # Home page
