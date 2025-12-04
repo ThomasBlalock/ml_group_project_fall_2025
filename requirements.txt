@@ -1,0 +1,15 @@
+censusdis
+geopandas
+graphviz
+joblib
+matplotlib
+numpy
+pandas
+plotly
+scikit-learn
+seaborn
+statsmodels
+streamlit
+streamlit-image-select
+torch
+torchviz

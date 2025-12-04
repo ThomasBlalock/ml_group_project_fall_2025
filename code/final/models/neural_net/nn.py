@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
+from torchviz import make_dot
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
@@ -134,6 +135,19 @@ def train_and_save():
     
     input_dim = X_train.shape[1]
     model = FoodSecurityFFNN(input_dim).to(DEVICE)
+
+    # --- Generate Architecture Diagram ---
+    try:
+        print("\n--- Generating Network Architecture Diagram ---")
+        dummy_input = torch.randn(1, input_dim).to(DEVICE)
+        y_hat = model(dummy_input)
+        dot = make_dot(y_hat, params=dict(model.named_parameters()), show_attrs=True, show_saved=True)
+        dot.format = 'png'
+        dot.render(os.path.join(ARTIFACTS_DIR, "network_architecture"))
+        print(f"Diagram saved to {ARTIFACTS_DIR}/network_architecture.png")
+    except Exception as e:
+        print(f"Could not generate diagram (ensure torchviz and graphviz are installed): {e}")
+
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
     
