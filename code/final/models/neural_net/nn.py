@@ -8,14 +8,26 @@ from torch.utils.data import Dataset, DataLoader
 from torchviz import make_dot
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
+from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error, confusion_matrix, classification_report 
 import joblib
 import json
 import os
 
 # --- Configuration ---
-DATA_FILE = "model_artifacts/data_with_clusters.csv"
-ARTIFACTS_DIR = "model_artifacts"
+target_dir = "final"
+max_depth = 10
+current_path = os.path.abspath(os.getcwd())
+start_path = current_path
+for i in range(max_depth):
+    current_dir_name = os.path.basename(current_path)
+    if current_dir_name == target_dir:
+        os.chdir(current_path)
+        break
+    parent_path = os.path.dirname(current_path)
+    current_path = parent_path
+
+DATA_FILE = "data/data_w_clusters.csv"
+ARTIFACTS_DIR = "models/neural_net/model_artifacts"
 BATCH_SIZE = 32
 LEARNING_RATE = 0.001
 EPOCHS = 100
@@ -42,7 +54,7 @@ def load_and_prep_data(filepath):
     ]
 
     categorical_cols = [
-        'State', 'YEAR', 'Low_Threshold_Type', 'Cluster'
+        'State', 'YEAR', 'Low_Threshold_Type', 'cluster'
     ]
     
     target_col = 'Food_Insecurity_Rate'
@@ -135,18 +147,6 @@ def train_and_save():
     
     input_dim = X_train.shape[1]
     model = FoodSecurityFFNN(input_dim).to(DEVICE)
-
-    # --- Generate Architecture Diagram ---
-    try:
-        print("\n--- Generating Network Architecture Diagram ---")
-        dummy_input = torch.randn(1, input_dim).to(DEVICE)
-        y_hat = model(dummy_input)
-        dot = make_dot(y_hat, params=dict(model.named_parameters()), show_attrs=True, show_saved=True)
-        dot.format = 'png'
-        dot.render(os.path.join(ARTIFACTS_DIR, "network_architecture"))
-        print(f"Diagram saved to {ARTIFACTS_DIR}/network_architecture.png")
-    except Exception as e:
-        print(f"Could not generate diagram (ensure torchviz and graphviz are installed): {e}")
 
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
