@@ -28,6 +28,8 @@ from plotly.subplots import make_subplots
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 import matplotlib.pyplot as plt
 import seaborn as sns
+import PIL
+from PIL import Image
 
 # """
 # To run:
@@ -80,21 +82,33 @@ def app():
 def home(): # Home page
     # Interactive ML Models
     st.markdown("""
-        <div style="padding:10px;border-radius:10px">
-            <h2 style="color:white;text-align:center;">Research Questions</h2>
-        </div>
-        """, unsafe_allow_html=True)
-    st.markdown("""- What predictors best correlate food insecurity? <- figure this out agfter we make models (put little paragraph why its import and what data we need to can get us there)
-- What model can best predict food insecurity?
-- What are the most effective interventions to reduce food insecurity?
-- Have the causes of food insecurity changed over time?""")
+        # Forecasting Resilience: A Comparative Analysis of Predictive Models for County-Level Food Insecurity
+                
+        ### Introduction: 
+        
+        Food insecurity is a pervasive challenge in the United States, yet its drivers vary significantly across different geographies. While national trends are well-documented, understanding the localized nuances of hunger at the county level remains a complex statistical challenge. This project aims to bridge that gap by evaluating and comparing various machine learning and statistical models to predict food insecurity rates across U.S. counties. By rigorously testing different algorithms—from linear regression to advanced ensemble methods—and analyzing a wide array of socioeconomic predictors, we seek to identify not only where food insecurity is most prevalent but why specific models succeed in predicting it. Our goal is to determine the most effective combination of data inputs and modeling techniques to provide policymakers with more accurate, actionable insights for targeted intervention.
+                
+        ### Research Questions:
+        
+        1. **Model Efficacy:** Which predictive model yields the lowest error rates when forecasting county-level food insecurity?
+
+        2. **Feature Importance:** Which variables are the strongest predictors of food insecurity in our models?
+
+        3. **Geographic Generalizability:** Do models trained on national data perform consistently across different regions (e.g., the rural South vs. the urban Northeast), or do regional disparities require distinct modeling approaches?
+
+        4. **Outlier Analysis:** What characterizes the counties where our models fail the most (highest residuals), and what does this suggest about "hidden" drivers of food insecurity not captured in standard datasets?
+        """)
+        #     st.markdown("""- What predictors best correlate food insecurity? <- figure this out agfter we make models (put little paragraph why its import and what data we need to can get us there)
+        # - What model can best predict food insecurity?
+        # - What are the most effective interventions to reduce food insecurity?
+        # - Have the causes of food insecurity changed over time?""")
     st.divider()
     st.markdown("""
         <div style="padding:10px;border-radius:10px">
             <h2 style="color:white;text-align:center;">Food Insecurity Calculator</h2>
         </div>
         """, unsafe_allow_html=True)
-    st.write("We'll put something here where they input data and our models run in the background and give thema prediction.")
+    calculator_section()
 
 
 
@@ -107,11 +121,17 @@ def data_sources():
         """, unsafe_allow_html=True)
     st.markdown("""**[US Census](https://api.census.gov/data/2022/acs/acs5/variables.html)**
                 
-insert paragraph explaining it/why it helps us answer our research questions
+For this project, we utilize the American Community Survey (ACS) to build the foundation of our predictive models. This dataset serves as our primary source for independent variables (predictors), giving us the granular, county-level socioeconomic data necessary to understand the root causes of food insecurity.
+
+Specifically, we use Census data to capture the economic stability of a county through variables like MEDIAN_HOUSEHOLD_INCOME, POVERTY_RATE, and UNEMPLOYMENT_RATE. Beyond these standard economic indicators, the Census allows us to dig deeper into structural vulnerability by analyzing HOUSEHOLDS_SNAP (SNAP participation) and POP_POVERTY_DETERMINED (the raw population for whom poverty status is known). By feeding these specific demographic and economic inputs into our models, we can test which community characteristics—whether it be a lack of income, high unemployment, or reliance on government assistance—are the strongest statistical signals for predicting hunger.
                 
 [Map the Meal Gap](https://www.feedingamerica.org/research/map-the-meal-gap/by-county)
 
-inser paragraph explaining it/why it helps us answer our research questions
+While the Census provides the predictors, the Map the Meal Gap (MMG) dataset provides our target variables (ground truth). Since the USDA does not measure food insecurity directly at the county level, we rely on MMG’s validated estimates to train and test our models.
+
+This dataset allows us to answer our core research questions by providing the actual Food_Insecurity_Rate and Num_Food_Insecure_Persons that we are trying to predict. Crucially, MMG also helps us distinguish between simple poverty and actual food hardship by providing unique cost-of-living metrics like Cost_Per_Meal and the Annual_Food_Budget_Shortfall.
+
+Furthermore, MMG enables us to perform more nuanced analysis beyond just a single "hunger rate." With variables like Pct_FI_Below_Low_Threshold and Child_Food_Insecurity_Rate, we can separate our analysis to see if different models are needed to predict insecurity for children versus the general population, or for families who qualify for federal aid versus those who don't.
                 """)
     
     # Key Visualizations
@@ -182,6 +202,13 @@ inser paragraph explaining it/why it helps us answer our research questions
         st.plotly_chart(fig_corr, use_container_width=True)
         st.caption("Red indicates positive correlation, blue indicates negative correlation.")
 
+        # # Make button to generate report
+        # if st.button("Generate Data Profiling Report"):
+        #     with open(os.path.join(ROOT_DIR, "data_engineering", "data_profiling.html"), "r") as f:
+        #         profile_report = f.read()
+
+        #     st.markdown(profile_report, unsafe_allow_html=True)
+
 
 def get_img_as_base64(file_path): # Helper fn
     with open(file_path, "rb") as f:
@@ -245,11 +272,31 @@ def linear_page():
             <h2 style="color:white;text-align:center;">Linear Model</h2>
         </div>
         """, unsafe_allow_html=True)
+    
+    # Make list of all files in the directory ending in .png
+    image_files = [f for f in os.listdir(os.path.join(ROOT_DIR, "models", "linear", "artifacts")) if f.endswith(".png")]
+    
+    # Load img
+    for img_file in image_files:
+        img = Image.open(os.path.join(ROOT_DIR, "models", "linear", "artifacts", img_file))
+        st.image(img, width="stretch")
 
 # <<<<<<<<<<<<<<<<<<<<<<<< Linear Page <<<<<<<<<<<<<<<<<<<<<<<
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>> KNN Page >>>>>>>>>>>>>>>>>>>>>>>>>
+import numpy as np
+import plotly.express as px
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import GridSearchCV
+from sklearn.preprocessing import LabelEncoder
+import matplotlib.pyplot as plt
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score, confusion_matrix
+from sklearn.decomposition import PCA
+
 
 def knn_page():
     st.markdown("""
@@ -257,6 +304,130 @@ def knn_page():
             <h2 style="color:white;text-align:center;">K-Nearest Neighbors</h2>
         </div>
         """, unsafe_allow_html=True)
+    data = pd.read_csv('./data/data.csv')
+    data = data.dropna(subset=[col for col in data.columns if col != "Pct_FI_Between_Thresholds"])
+    bins = [0, 0.115, 0.138, 0.164, 1]  # 1 is just a safe upper bound
+    labels = ["Low", "Moderate", "Elevated", "High"]
+
+    data["FI_Category"] = pd.cut(
+        data["Food_Insecurity_Rate"],
+        bins=bins,
+        labels=labels,
+        include_lowest=True
+    )
+
+    data["FI_Category"].value_counts()
+    y=data['FI_Category']
+    X = data[['MEDIAN_HOUSEHOLD_INCOME',
+            'POP_POVERTY_DETERMINED',
+            'POP_BELOW_POVERTY',
+            'POP_16_PLUS',
+            'POP_UNEMPLOYED',
+            'HOUSEHOLDS_TOTAL',
+            'HOUSEHOLDS_SNAP',
+            'POVERTY_RATE',
+            'UNEMPLOYMENT_RATE',
+            'SNAP_RECEIPT_RATE',
+            'Cost_Per_Meal',
+            'Annual_Food_Budget_Shortfall']]
+    county_series = data["County"]
+    state_series = data["State"]
+    fips_series = data["FIPS"]
+
+    X_train, X_test, y_train, y_test, county_train, county_test, state_train, state_test, fips_train, fips_test = train_test_split(
+        X, y, county_series, state_series, fips_series,
+        test_size=0.25,
+        random_state=42,
+        stratify=y
+    )
+
+    pipe = Pipeline([
+        ("scaler", StandardScaler()),
+        ("knn", KNeighborsClassifier(weights="distance"))
+    ])
+
+    param_grid = {"knn__n_neighbors": range(1, 41, 2)}
+
+    grid = GridSearchCV(pipe, param_grid, cv=5, scoring="balanced_accuracy", n_jobs=-1)
+    grid.fit(X_train, y_train)
+
+    results_df = pd.DataFrame(grid.cv_results_)
+
+    results_df["k"] = results_df["param_knn__n_neighbors"]
+    results_df["mean_score"] = results_df["mean_test_score"]
+
+    best_k = grid.best_params_["knn__n_neighbors"]
+    best_score = grid.best_score_
+
+    fig = px.line(
+        results_df,
+        x="k",
+        y="mean_score",
+        title=f"Cross-Validated Balanced Accuracy vs. K (best k = {best_k})",
+        markers=True,
+        labels={"k": "Number of Neighbors (k)", "mean_score": "Mean CV Balanced Accuracy"}
+    )
+
+
+    fig.add_scatter(
+        x=[best_k],
+        y=[best_score],
+        mode="markers+text",
+        text=[f"Best k = {best_k}"],
+        textposition="top center",
+        name="Best k"
+    )
+
+    fig.update_layout(hovermode="x unified")
+    st.plotly_chart(fig)
+
+    pipe2 = Pipeline([
+        ("scaler", StandardScaler()),
+        ("knn", KNeighborsClassifier(n_neighbors=best_k,
+        weights="distance"))
+    ])
+
+    pipe2.fit(X_train, y_train)
+    y_pred = pipe2.predict(X_test)
+
+    acc = accuracy_score(y_test, y_pred)
+    bal_acc = balanced_accuracy_score(y_test, y_pred)
+
+    st.write(f"Accuracy: {acc:.3f}")
+    st.write(f"Balanced accuracy: {bal_acc:.3f}")
+
+    from sklearn.metrics import confusion_matrix
+
+    cm = confusion_matrix(y_test, y_pred, labels=pipe2.classes_)
+
+    cm_df = pd.DataFrame(
+        cm,
+        index=[f"Actual {c}" for c in pipe2.classes_],
+        columns=[f"Predicted {c}" for c in pipe2.classes_]
+    )
+
+    st.write(cm_df)
+
+    scaler_pca = StandardScaler()
+    X_scaled_full = scaler_pca.fit_transform(X)
+
+    pca = PCA(n_components=2, random_state=42)
+    X_pca = pca.fit_transform(X_scaled_full)
+
+    pca_df = pd.DataFrame(X_pca, columns=["PC1", "PC2"])
+    pca_df["FI_Category"] = y.values
+
+    fig = px.scatter(
+        pca_df,
+        x="PC1",
+        y="PC2",
+        color="FI_Category",
+        title="PCA (2D) of MMG Features Labeled by FI Category",
+        hover_data=["FI_Category"],
+    )
+    st.plotly_chart(fig)
+
+
 
 # <<<<<<<<<<<<<<<<<<<<<<<< KNN Page <<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -312,8 +483,7 @@ def make_prediction(model, scaler, metadata, input_data):
 
 # --- Streamlit Layout ---
 
-def nn_page():
-
+def calculator_section():
     # Get Model Resources
     metadata = joblib.load(os.path.join(NN_ARTIFACTS_DIR, "model_metadata.save"))
     scaler = joblib.load(os.path.join(NN_ARTIFACTS_DIR, "scaler.save"))
@@ -359,9 +529,9 @@ def nn_page():
             input_data['Low_Threshold_Type'] = st.selectbox("Threshold Type", metadata['unique_values']['Low_Threshold_Type'])
         with cat_col4:
             if 'Cluster' in metadata['unique_values']:
-                input_data['Cluster'] = st.selectbox("Cluster Group", metadata['unique_values']['Cluster'])
+                input_data['last_year_cluster'] = st.selectbox("Cluster Group", metadata['unique_values']['Cluster'])
             else:
-                input_data['Cluster'] = st.selectbox("Cluster Group", ['0', '1'], help="Cluster assignment based on poverty/employment features")
+                input_data['last_year_cluster'] = st.selectbox("Cluster Group", ['0', '1', '2', '3'], help="Cluster assignment based on poverty/employment features")
 
         # Prediction Button
         if st.button("Predict Food Insecurity Rate", type="primary"):
@@ -378,6 +548,20 @@ def nn_page():
                 st.caption("This indicates a moderate level of food insecurity.")
             else:
                 st.warning("This indicates a high level of food insecurity.")
+
+def nn_page():
+
+    # Get Model Resources
+    metadata = joblib.load(os.path.join(NN_ARTIFACTS_DIR, "model_metadata.save"))
+    scaler = joblib.load(os.path.join(NN_ARTIFACTS_DIR, "scaler.save"))
+    input_dim = len(metadata['feature_columns'])
+    model = FoodSecurityFFNN(input_dim)
+    model.load_state_dict(torch.load(os.path.join(NN_ARTIFACTS_DIR, "food_security_model.pth"), map_location=torch.device('cpu')))
+    model.eval()
+    with open(os.path.join(NN_ARTIFACTS_DIR, "training_history.json"), 'r') as f:
+        history = json.load(f)
+
+    if model is not None:
         
         st.subheader("Training History")
         
@@ -436,7 +620,7 @@ def nn_page():
         
         # Macro F1
         macro_f1 = data['classification_report']['macro avg']['f1-score']
-        col3.metric("Macro F1-Score", f"{macro_f1:.4f}")
+        col3.metric("F1-Score", f"{macro_f1:.4f}")
 
         st.divider()
 
@@ -513,103 +697,102 @@ def nn_page():
 
 # >>>>>>>>>>>>>>>>>>> K-Means Page >>>>>>>>>>>>>>>>>>>>>>>>>
 
-def kmeans_page():
-    clustering_data = joblib.load(os.path.join(NN_ARTIFACTS_DIR, "clustering_model.save"))
-    clustered_df = pd.read_csv(os.path.join(NN_ARTIFACTS_DIR, "data_with_clusters.csv"))
+# def kmeans_page():
+#     clustering_data = joblib.load(os.path.join(NN_ARTIFACTS_DIR, "clustering_model.save"))
+#     clustered_df = pd.read_csv(os.path.join(NN_ARTIFACTS_DIR, "data_with_clusters.csv"))
 
-    if clustering_data is not None and clustered_df is not None:
-            st.markdown("---")
-            st.header("🎯 K-Means Cluster Analysis")
+#     if clustering_data is not None and clustered_df is not None:
+#             st.markdown("---")
+#             st.header("🎯 K-Means Cluster Analysis")
 
-            cluster_col1, cluster_col2 = st.columns([1, 2])
+#             cluster_col1, cluster_col2 = st.columns([1, 2])
 
-            with cluster_col1:
-                st.subheader("Clustering Info")
-                st.metric("Optimal K (Clusters)", clustering_data['optimal_k'])
-                st.metric("Silhouette Score", f"{clustering_data.get('silhouette_score', 'N/A'):.3f}"
-                         if 'silhouette_score' in clustering_data else "N/A")
+#             with cluster_col1:
+#                 st.subheader("Clustering Info")
+#                 st.metric("Optimal K (Clusters)", clustering_data['optimal_k'])
+#                 st.metric("Silhouette Score", f"{clustering_data.get('silhouette_score', 'N/A'):.3f}"
+#                          if 'silhouette_score' in clustering_data else "N/A")
 
-                st.markdown("**Clustering Features:**")
-                for feat in clustering_data['features']:
-                    st.text(f"• {feat}")
+#                 st.markdown("**Clustering Features:**")
+#                 for feat in clustering_data['features']:
+#                     st.text(f"• {feat}")
 
-                # Cluster distribution
-                cluster_counts = clustered_df['Cluster'].value_counts().sort_index()
-                st.markdown("**Cluster Distribution:**")
-                for cluster_id, count in cluster_counts.items():
-                    st.text(f"Cluster {cluster_id}: {count} counties")
+#                 # Cluster distribution
+#                 cluster_counts = clustered_df['Cluster'].value_counts().sort_index()
+#                 st.markdown("**Cluster Distribution:**")
+#                 for cluster_id, count in cluster_counts.items():
+#                     st.text(f"Cluster {cluster_id}: {count} counties")
 
-            with cluster_col2:
-                st.subheader("Cluster Visualization")
+#             with cluster_col2:
+#                 st.subheader("Cluster Visualization")
 
-                # 3D scatter plot of clusters
-                cluster_features = clustering_data['features']
-                if len(cluster_features) >= 3:
-                    fig_3d = px.scatter_3d(
-                        clustered_df,
-                        x=cluster_features[0],
-                        y=cluster_features[1],
-                        z=cluster_features[2],
-                        color='Cluster',
-                        title='3D Cluster Visualization',
-                        labels={'Cluster': 'Cluster ID'},
-                        color_continuous_scale='Viridis'
-                    )
-                    fig_3d.update_layout(height=500)
-                    st.plotly_chart(fig_3d, use_container_width=True)
+#                 # 3D scatter plot of clusters
+#                 cluster_features = clustering_data['features']
+#                 if len(cluster_features) >= 3:
+#                     fig_3d = px.scatter_3d(
+#                         clustered_df,
+#                         x=cluster_features[0],
+#                         y=cluster_features[1],
+#                         z=cluster_features[2],
+#                         color='Cluster',
+#                         title='3D Cluster Visualization',
+#                         labels={'Cluster': 'Cluster ID'},
+#                         color_continuous_scale='Viridis'
+#                     )
+#                     fig_3d.update_layout(height=500)
+#                     st.plotly_chart(fig_3d, use_container_width=True)
 
-            # Cluster statistics comparison
-            st.subheader("📊 Cluster Characteristics")
+#             # Cluster statistics comparison
+#             st.subheader("📊 Cluster Characteristics")
 
-            cluster_stats = clustered_df.groupby('Cluster')[clustering_data['features']].mean()
+#             cluster_stats = clustered_df.groupby('Cluster')[clustering_data['features']].mean()
 
-            fig_cluster_bars = go.Figure()
-            for feature in clustering_data['features']:
-                fig_cluster_bars.add_trace(go.Bar(
-                    name=feature,
-                    x=[f"Cluster {i}" for i in cluster_stats.index],
-                    y=cluster_stats[feature]
-                ))
+#             fig_cluster_bars = go.Figure()
+#             for feature in clustering_data['features']:
+#                 fig_cluster_bars.add_trace(go.Bar(
+#                     name=feature,
+#                     x=[f"Cluster {i}" for i in cluster_stats.index],
+#                     y=cluster_stats[feature]
+#                 ))
 
-            fig_cluster_bars.update_layout(
-                title='Average Feature Values by Cluster',
-                xaxis_title='Cluster',
-                yaxis_title='Average Value',
-                barmode='group',
-                template='plotly_white',
-                height=400
-            )
-            st.plotly_chart(fig_cluster_bars, use_container_width=True)
+#             fig_cluster_bars.update_layout(
+#                 title='Average Feature Values by Cluster',
+#                 xaxis_title='Cluster',
+#                 yaxis_title='Average Value',
+#                 barmode='group',
+#                 template='plotly_white',
+#                 height=400
+#             )
+#             st.plotly_chart(fig_cluster_bars, use_container_width=True)
 
-            # Food Insecurity by Cluster
-            st.subheader("🍽️ Food Insecurity Rate by Cluster")
-            cluster_fi = clustered_df.groupby('Cluster')['Food_Insecurity_Rate'].agg(['mean', 'min', 'max', 'std'])
+#             # Food Insecurity by Cluster
+#             st.subheader("🍽️ Food Insecurity Rate by Cluster")
+#             cluster_fi = clustered_df.groupby('Cluster')['Food_Insecurity_Rate'].agg(['mean', 'min', 'max', 'std'])
 
-            fig_fi_cluster = go.Figure()
-            fig_fi_cluster.add_trace(go.Bar(
-                x=[f"Cluster {i}" for i in cluster_fi.index],
-                y=cluster_fi['mean'] * 100,
-                error_y=dict(type='data', array=cluster_fi['std'] * 100),
-                marker_color='indianred',
-                text=(cluster_fi['mean'] * 100).round(2),
-                textposition='outside'
-            ))
+#             fig_fi_cluster = go.Figure()
+#             fig_fi_cluster.add_trace(go.Bar(
+#                 x=[f"Cluster {i}" for i in cluster_fi.index],
+#                 y=cluster_fi['mean'] * 100,
+#                 error_y=dict(type='data', array=cluster_fi['std'] * 100),
+#                 marker_color='indianred',
+#                 text=(cluster_fi['mean'] * 100).round(2),
+#                 textposition='outside'
+#             ))
 
-            fig_fi_cluster.update_layout(
-                title='Average Food Insecurity Rate by Cluster (with std dev)',
-                xaxis_title='Cluster',
-                yaxis_title='Food Insecurity Rate (%)',
-                template='plotly_white',
-                height=400
-            )
-            st.plotly_chart(fig_fi_cluster, use_container_width=True)
+#             fig_fi_cluster.update_layout(
+#                 title='Average Food Insecurity Rate by Cluster (with std dev)',
+#                 xaxis_title='Cluster',
+#                 yaxis_title='Food Insecurity Rate (%)',
+#                 template='plotly_white',
+#                 height=400
+#             )
+#             st.plotly_chart(fig_fi_cluster, use_container_width=True)
 
 # <<<<<<<<<<<<<<<<<<<<<<< K-Means Page <<<<<<<<<<<<<<<<<<<<<<<
 
 
 # >>>>>>>>>>>>>>>>>>>>>> PCA Page >>>>>>>>>>>>>>>>>>>>>>>>>>
 
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -648,7 +831,7 @@ def pca_page():
     st.pyplot(plt)
     st.write("Based on the scree plot, we will use 4 components.")
 
-    pcaDF = pd.load_csv(os.path.join(ROOT_DIR, "data", "pcaDF.csv"))
+    pcaDF = pd.read_csv(os.path.join(ROOT_DIR, "data", "pcaDF.csv"))
 
     # Visualize clusters in PCA space
     sns.pairplot(pcaDF, palette='Set2')
@@ -680,9 +863,9 @@ def pca_page():
     st.markdown("""
     ## Cluster Analysis
 
-The two clusters represent distinct socioeconomic and food-security profiles across the units in the dataset. Cluster 0 is characterized by substantially lower absolute counts of food-insecure individuals and households, lower total population and household totals, and generally lower poverty-related burdens. For example, the centroid for Num_Food_Insecure_Persons (~9,600), POP_BELOW_POVERTY (~9,800), and HOUSEHOLDS_TOTAL (~25,700) suggests smaller, less densely populated communities with relatively moderated levels of economic hardship. The food insecurity rate (~0.145) and child food insecurity rate (~0.219) are meaningful but not extreme, and median household income (~$46,400) is modest yet notably higher than typical high-poverty geographies. Overall, Cluster 0 represents moderately food-insecure, lower-population regions with more stable economic indicators.
+The two clusters represent distinct socioeconomic and food-security profiles across the units in the dataset. Cluster 0 is characterized by substantially lower absolute counts of food-insecure individuals and households, lower total population and household totals, and generally lower poverty-related burdens. For example, the centroid for Num_Food_Insecure_Persons (\~9,600), POP_BELOW_POVERTY (\~9,800), and HOUSEHOLDS_TOTAL (\~25,700) suggests smaller, less densely populated communities with relatively moderated levels of economic hardship. The food insecurity rate (\~0.145) and child food insecurity rate (\~0.219) are meaningful but not extreme, and median household income (\~$46,400) is modest yet notably higher than typical high-poverty geographies. Overall, Cluster 0 represents moderately food-insecure, lower-population regions with more stable economic indicators.
 
-In contrast, Cluster 1 reflects a dramatically different profile, with an order-of-magnitude increase in population and economic strain. These areas exhibit extremely high counts of food-insecure persons (~425,000), food-insecure children (~150,000), and households receiving SNAP (~121,000). Poverty and unemployment burdens are also substantially higher in absolute size, and median household income (~$54,200) is slightly higher than Cluster 0 but does not compensate for the much larger populations living below poverty. Interestingly, the rates of food insecurity and child food insecurity are similar to those of Cluster 0, but the total scale of affected individuals is vastly larger. Thus, Cluster 1 captures high-population, high-need metropolitan or regional centers where structural poverty affects a far larger volume of residents, even when rate-based indicators appear comparable.
+In contrast, Cluster 1 reflects a dramatically different profile, with an order-of-magnitude increase in population and economic strain. These areas exhibit extremely high counts of food-insecure persons (\~425,000), food-insecure children (\~150,000), and households receiving SNAP (\~121,000). Poverty and unemployment burdens are also substantially higher in absolute size, and median household income (\~$54,200) is slightly higher than Cluster 0 but does not compensate for the much larger populations living below poverty. Interestingly, the rates of food insecurity and child food insecurity are similar to those of Cluster 0, but the total scale of affected individuals is vastly larger. Thus, Cluster 1 captures high-population, high-need metropolitan or regional centers where structural poverty affects a far larger volume of residents, even when rate-based indicators appear comparable.
 
 Taken together, these clusters differentiate not merely by intensity of food insecurity in percentage terms, but by structural magnitude—Cluster 0 represents smaller, moderately burdened communities, whereas Cluster 1 captures large-scale, high-need population centers where social assistance demand, economic vulnerability, and food insecurity exist at a substantially greater scale. This distinction is especially relevant for resource allocation: policies optimized for Cluster 1 must address volume and infrastructure capacity, whereas interventions for Cluster 0 may focus on rural access, localized service gaps, and targeted support.
     """)
@@ -726,29 +909,41 @@ def kmeans_page():
     st.pyplot(plt)
 
     K_values = list(range(1,15))
-    wcss = []
-    for k in K_values:
-        pipe.set_params(kmeans__n_clusters=k)
-        pipe.fit(subData[feature_cols])
-        wcss.append(pipe['kmeans'].inertia_)
+    with open('models/kmeans-pca/artifacts/elbow.txt', 'r') as f:
+        wcss = json.load(f)
+
+    # wcss = []
+    # for k in K_values:
+    #     pipe.set_params(kmeans__n_clusters=k)
+    #     pipe.fit(subData[feature_cols])
+    #     wcss.append(pipe['kmeans'].inertia_)
+
+    # with open('models/kmeans/artifacts/elbow.txt', 'w') as f:
+    #     json.dump(wcss, f)
 
     fig = px.line(x=K_values, y=wcss, markers=True,
                 title="Elbow Plot",
                 labels={"x":"Number of Clusters", "y":"WCSS"})
-    st.pyplot(fig)
+    st.plotly_chart(fig)
 
-    sil_scores = []
+    with open('models/kmeans-pca/artifacts/sil_scores.txt', 'r') as f:
+        sil_scores = json.load(f)
+
+    # sil_scores = []
     K_values_sil = list(range(2,15))
-    for k in K_values_sil:
-        pipe.set_params(kmeans__n_clusters=k)
-        pipe.fit(subData[feature_cols])
-        labels = pipe['kmeans'].labels_
-        sil_scores.append(silhouette_score(subData[feature_cols], labels))
+    # for k in K_values_sil:
+    #     pipe.set_params(kmeans__n_clusters=k)
+    #     pipe.fit(subData[feature_cols])
+    #     labels = pipe['kmeans'].labels_
+    #     sil_scores.append(silhouette_score(subData[feature_cols], labels))
+    
+    # with open('models/kmeans/artifacts/sil_scores.txt', 'w') as f:
+    #     json.dump(sil_scores, f)
 
     fig = px.line(x=K_values_sil, y=sil_scores, markers=True,
                 title="Silhouette Scores",
                 labels={"x":"Number of Clusters", "y":"Silhouette Score"})
-    st.pyplot(fig)
+    st.plotly_chart(fig)
 
     def predict_kmeans_cluster(new_row, pipeline, feature_cols):
         """
