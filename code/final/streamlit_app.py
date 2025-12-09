@@ -241,6 +241,28 @@ Furthermore, MMG enables us to perform more nuanced analysis beyond just a singl
         st.plotly_chart(fig_corr, use_container_width=True)
         st.caption("Red indicates positive correlation, blue indicates negative correlation.")
 
+        artifacts_dir = os.path.join(ROOT_DIR, "models", "linear", "artifacts")
+        def render_artifact(filename, header, description=""):
+            filepath = os.path.join(artifacts_dir, filename)
+            if os.path.exists(filepath):
+                st.markdown(f"### {header}")
+                if description:
+                    st.caption(description)
+                image = Image.open(filepath)
+                st.image(image, use_container_width=True) # use_container_width replaces use_column_width in newer Streamlit
+                st.divider()
+            else:
+                # Optional: handle missing files quietly or with a warning
+                pass
+
+        # GEOGRAPHIC CONTEXT
+        st.info("Geographic Analysis")
+        
+        render_artifact("child_food_i_map.png", "Child Food Insecurity Map", 
+                        "Geographic distribution of the target variable.")
+        render_artifact("cost_per_meal_map.png", "Cost Per Meal Map", 
+                        "Geographic distribution of meal costs.")
+
         # # Make button to generate report
         # if st.button("Generate Data Profiling Report"):
         #     with open(os.path.join(ROOT_DIR, "data_engineering", "data_profiling.html"), "r") as f:
@@ -306,19 +328,45 @@ def models():
 # >>>>>>>>>>>>>>>>>>>>>>>> Linear Page >>>>>>>>>>>>>>>>>>>>>
 
 def linear_page():
+    # Main Page Header
     st.markdown("""
-        <div style="padding:10px;border-radius:10px">
-            <h2 style="color:white;text-align:center;">Linear Model</h2>
+        <div style="padding:10px;border-radius:10px;margin-bottom:20px">
+            <h1 style="color:white;text-align:center;">Linear Model Analysis</h1>
         </div>
         """, unsafe_allow_html=True)
+
+    # Base path for artifacts
+    # Ensure ROOT_DIR is defined in your global scope or imports
+    artifacts_dir = os.path.join(ROOT_DIR, "models", "linear", "artifacts")
+
+    # Helper function to display images safely with headers
+    def render_artifact(filename, header, description=""):
+        filepath = os.path.join(artifacts_dir, filename)
+        if os.path.exists(filepath):
+            st.markdown(f"### {header}")
+            if description:
+                st.caption(description)
+            image = Image.open(filepath)
+            st.image(image, use_container_width=True) # use_container_width replaces use_column_width in newer Streamlit
+            st.divider()
+        else:
+            # Optional: handle missing files quietly or with a warning
+            pass
+
+    # --- SECTION 3: CORRELATIONS & RELATIONSHIPS ---
+    st.info("Feature Correlations")
     
-    # Make list of all files in the directory ending in .png
-    image_files = [f for f in os.listdir(os.path.join(ROOT_DIR, "models", "linear", "artifacts")) if f.endswith(".png")]
+    render_artifact("corr_plot.png", "General Correlation Matrix")
+    render_artifact("corr_plot_num.png", "Numeric Correlation Detail")
+    render_artifact("child_food_i_by_income.png", "Insecurity vs. Income", 
+                    "Visualizing the relationship between income levels and food insecurity.")
+
+    # --- SECTION 4: MODEL RESULTS ---
+    st.success("OLS Model Results")
     
-    # Load img
-    for img_file in image_files:
-        img = Image.open(os.path.join(ROOT_DIR, "models", "linear", "artifacts", img_file))
-        st.image(img, width="stretch")
+    st.write("Comparison of the initial model vs. the refined model.")
+    render_artifact("OLS_1_results.png", "Model 1: OLS Summary")
+    render_artifact("OLS_2_results.png", "Model 2: OLS Summary")
 
 # <<<<<<<<<<<<<<<<<<<<<<<< Linear Page <<<<<<<<<<<<<<<<<<<<<<<
 
