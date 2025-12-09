@@ -53,8 +53,8 @@ def app():
         <div style="background-color:#025464;padding:10px;border-radius:10px">
             <h1 style="color:white;text-align:center;">Taking a Byte Out of Food Insecurity</h1>
             <p style="color:white;text-align:center;font-size:0.9em;font-style:italic;margin-top:-10px;margin-bottom:-10px;">
-                Muhammad Amjad &bull; Reed Baumgarner &bull; Thomas Blalock &bull; 
-                Helen Corbat &bull; Max Ellingson &bull; Harry Millspaugh &bull; John Twomey
+                Muhammad Amjad &bull; Reed Baumgardner &bull; Thomas Blalock &bull; 
+                Helen Corbat &bull; Max Ellingsen &bull; Harry Millspaugh &bull; John Twomey
             </p><br>
             <p style="color:white;text-align:center;font-size:0.9em;margin-top:-10px;">
                 <b>University of Virginia &bull; Predictive Modeling I &bull; Fall 2025</b>
@@ -63,15 +63,18 @@ def app():
         """, unsafe_allow_html=True)
     
     # Tabs
-    h, ds, m = st.tabs(["Home", 
+    h, ds, m, c = st.tabs(["Home", 
                         "Data Sources", 
-                        "Models"], default="Home")
+                        "Models",
+                        "Conclusion"], default="Home")
     with ds:
         data_sources()
     with m:
         models()
     with h:
         home()
+    with c:
+        conclusion()
 
 # <<<<<<<<<<<<<<<<<<<< Routing <<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -79,10 +82,47 @@ def app():
 
 # >>>>>>>>>>>>>>>>>>> Tabs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+def conclusion():
+    future_work = """
+        ## Future Research
+
+        While this study establishes a strong baseline for predicting county-level food insecurity using demographic and economic snapshots, the complexity of food systems requires a multi-dimensional approach. Future iterations of this project will aim to expand the feature space, increase the resolution of geospatial data, and apply more rigorous validation techniques to enhance model robustness.
+
+        ### 1. Integration of Macroeconomic and Temporal Indicators
+        Currently, our models rely primarily on annual aggregates from the ACS and Map the Meal Gap. However, food insecurity is often a lagging indicator of broader economic shifts. Future work will involve transforming our dataset from a static cross-sectional analysis into a longitudinal time-series framework.
+
+        * **Commodity Markets & Inflation:** We aim to incorporate high-frequency financial data, specifically **futures prices** for staple commodities (corn, wheat, soy, and livestock) and the Consumer Price Index (CPI) for food-at-home. By correlating these leading indicators with insecurity rates, we can test if global market volatility predicts local hardship.
+        * **Macro-Economic Health:** Incorporating regional **GDP growth rates** and state-level labor market fluidity could help the model distinguish between structural poverty (chronic) and cyclical insecurity caused by short-term economic downturns.
+
+        ### 2. Geospatial Granularity: Supply Chain and Built Environment
+        Our current analysis operates at the county level, which can obscure hyper-local disparities, particularly in the "micro" environment of food access. Future research will focus on the physical and logistical constraints of food security:
+
+        * **Infrastructure & Supply Chain (Macro):** We plan to model the logistical isolation of counties by analyzing distance to major distribution hubs and the density of the freight network. This would help quantify the "supply chain friction" that exacerbates food costs in remote areas.
+        * **The Built Environment (Micro):** To better address the "Urban vs. Rural" research question, we propose integrating Walk Score® data or USDA Food Access Research Atlas data. This allows for the analysis of **walkability** and transit access, differentiating between "food deserts" (lack of access) and "food swamps" (abundance of low-nutrient food).
+        * **Regional Stratification:** We intend to use clustering algorithms (like K-Means) to stratify the US into distinct "food environments" prior to training. Training separate models for "Rural-Agricultural" vs. "Urban-Industrial" clusters may yield higher accuracy than a single "one-size-fits-all" national model.
+
+        ### 3. Advanced Model Evaluation and Interpretability
+        While our current study compares error rates across Linear, KNN, and Neural Network models, future work requires a more rigorous diagnostic framework to ensure policy readiness.
+
+        * **Spatial Cross-Validation:** We will implement spatial cross-validation (training on specific regions and testing on distinct, geographically separated regions) to strictly test the **Geographic Generalizability** of our models. This prevents the model from overfitting to spatial autocorrelation (where neighboring counties have similar traits) rather than learning true causal factors.
+        * **Explainable AI (XAI):** Particularly for the Neural Network component, we aim to implement **SHAP (SHapley Additive exPlanations)** values. This will allow us to move beyond simple feature importance and understand *how* specific variables (e.g., housing costs vs. SNAP participation) interact non-linearly to drive predictions in high-risk counties.
+        * **Outlier Forensics:** A qualitative analysis of counties with the highest residuals (where the model failed most significantly) will be conducted to identify "hidden variables"—such as local policy interventions or active community mutual aid networks—that quantitative data alone cannot capture.
+        """
+    st.markdown("""
+        <div style="padding:10px;border-radius:10px">
+            <h2 style="color:white;text-align:center;">Conclusion & Future Work</h2>
+            {}
+        </div>
+        """.format(future_work), unsafe_allow_html=True)
+    
+
+
 def home(): # Home page
     # Interactive ML Models
     st.markdown("""
-        # Forecasting Resilience: A Comparative Analysis of Predictive Models for County-Level Food Insecurity
+        # Forecasting Resilience
+        
+        A Comparative Analysis of Predictive Models for County-Level Food Insecurity
                 
         ### Introduction: 
         
@@ -95,8 +135,6 @@ def home(): # Home page
         2. **Feature Importance:** Which variables are the strongest predictors of food insecurity in our models?
 
         3. **Geographic Generalizability:** Do models trained on national data perform consistently across different regions (e.g., the rural South vs. the urban Northeast), or do regional disparities require distinct modeling approaches?
-
-        4. **Outlier Analysis:** What characterizes the counties where our models fail the most (highest residuals), and what does this suggest about "hidden" drivers of food insecurity not captured in standard datasets?
         """)
         #     st.markdown("""- What predictors best correlate food insecurity? <- figure this out agfter we make models (put little paragraph why its import and what data we need to can get us there)
         # - What model can best predict food insecurity?
@@ -109,6 +147,7 @@ def home(): # Home page
         </div>
         """, unsafe_allow_html=True)
     calculator_section()
+    calculator_knn_section()
 
 
 
@@ -429,6 +468,193 @@ def knn_page():
 
 
 
+def predict_county(county_name, state_name=None):
+    data = pd.read_csv('./data/data.csv')
+    data = data.dropna(subset=[col for col in data.columns if col != "Pct_FI_Between_Thresholds"])
+    bins = [0, 0.115, 0.138, 0.164, 1]  # 1 is just a safe upper bound
+    labels = ["Low", "Moderate", "Elevated", "High"]
+
+    data["FI_Category"] = pd.cut(
+        data["Food_Insecurity_Rate"],
+        bins=bins,
+        labels=labels,
+        include_lowest=True
+    )
+
+    data["FI_Category"].value_counts()
+    y=data['FI_Category']
+    X = data[['MEDIAN_HOUSEHOLD_INCOME',
+            'POP_POVERTY_DETERMINED',
+            'POP_BELOW_POVERTY',
+            'POP_16_PLUS',
+            'POP_UNEMPLOYED',
+            'HOUSEHOLDS_TOTAL',
+            'HOUSEHOLDS_SNAP',
+            'POVERTY_RATE',
+            'UNEMPLOYMENT_RATE',
+            'SNAP_RECEIPT_RATE',
+            'Cost_Per_Meal',
+            'Annual_Food_Budget_Shortfall']]
+
+    category_ranges = {
+        "Low": "[0.000, 0.115]",
+        "Moderate": "(0.115, 0.138]",
+        "Elevated": "(0.138, 0.164]",
+        "High": "(0.164, 1.000]"
+    }
+
+    # Mean numeric FI rate for each category (used as predicted numeric)
+    cat_mean_rate = (
+        data.groupby("FI_Category")["Food_Insecurity_Rate"]
+        .mean()
+        .to_dict()
+    )
+    df = data.copy()
+
+    # Filter by county (case-insensitive)
+    mask = df["County"].str.contains(county_name, case=False, na=False)
+
+    if state_name:
+        mask &= df["State"].str.contains(state_name, case=False, na=False)
+
+    matches = df[mask]
+
+    if matches.empty:
+        print("No matching county found.")
+        return
+
+    # If we have multiple rows, see if it's really the same county (same FIPS)
+    if len(matches) > 1:
+        unique_fips = matches["FIPS"].nunique()
+
+        if unique_fips == 1:
+            print("Multiple rows for the same county found. Aggregating features.\n")
+
+            # Aggregate features and actual rate
+            X_row = matches[X.columns].mean().to_frame().T
+            actual = matches["Food_Insecurity_Rate"].mean()
+
+            county = matches["County"].iloc[0]
+            state = matches["State"].iloc[0]
+        else:
+            print("Multiple *different* counties matched your query. Please narrow it down:")
+            # display(matches[["County", "State", "FIPS"]].reset_index(drop=True))
+            return
+    else:
+        row = matches.iloc[0]
+        X_row = row[X.columns].to_frame().T
+        actual = row["Food_Insecurity_Rate"]
+        county = row["County"]
+        state = row["State"]
+
+    pipe2 = Pipeline([
+        ("scaler", StandardScaler()),
+        ("knn", KNeighborsClassifier(n_neighbors=7,
+        weights="distance"))
+    ])
+
+    pipe2.fit(X, y)
+
+    # --- MODEL PREDICTION ---
+    pred_cat = pipe2.predict(X_row)[0]
+    pred_cat_str = str(pred_cat)
+
+    # Predicted numeric rate = mean FI rate for that category in the data
+    pred_rate = cat_mean_rate[pred_cat]
+
+    # Actual category from actual numeric rate
+    actual_cat = pd.cut(
+        pd.Series([actual]),
+        bins=bins,
+        labels=labels,
+        include_lowest=True
+    ).iloc[0]
+    actual_cat_str = str(actual_cat)
+
+    # --- OUTPUT ---
+    print(f"County: {county}, {state}")
+    print()
+    print(f"Predicted FI Category: {pred_cat_str}")
+    print(f"  • Approx. predicted FI rate (category mean): {pred_rate:.3f}")
+    print(f"  • Category range: {category_ranges[pred_cat_str]}")
+    print()
+    print(f"Actual FI rate from dataset: {actual:.3f}")
+    print(f"  • Actual FI category (using same bins): {actual_cat_str}")
+
+    return {
+        "County": county,
+        "State": state,
+        "Predicted FI Category": pred_cat_str,
+        "Predicted FI Rate": pred_rate,
+        "Category Range": category_ranges[pred_cat_str],
+        "Actual FI Rate": actual,
+        "Actual FI Category": actual_cat_str
+    }
+
+def display_prediction_card(data):
+    # Container to hold the styling
+    with st.container(border=True):
+        
+        # Header: County and State
+        st.markdown(f"### 📍 {data['County']}, {data['State']}")
+        st.divider()
+
+        # Layout: 3 Columns for Metrics
+        col1, col2, col3 = st.columns(3)
+
+        # Calculate Error (Delta)
+        # Assuming rates are floats. If they are 0.14, multiply by 100 for display
+        pred_val = data['Predicted FI Rate']
+        actual_val = data['Actual FI Rate']
+        delta = round(pred_val - actual_val, 2)
+
+        # Column 1: The Prediction
+        with col1:
+            st.metric(
+                label="Predicted Rate",
+                value=f"{pred_val}%",
+                delta=f"{delta}% Error",
+                delta_color="inverse" # Red if positive (overestimate), Green if negative (underestimate)
+            )
+            st.caption(f"Range: {data['Category Range']}")
+
+        # Column 2: The Ground Truth
+        with col2:
+            st.metric(
+                label="Actual Rate",
+                value=f"{actual_val}%"
+            )
+
+        # Column 3: Category Match Status
+        with col3:
+            is_match = data['Predicted FI Category'] == data['Actual FI Category']
+            
+            st.markdown("**Category Accuracy**")
+            if is_match:
+                st.success(f"✅ Match: {data['Predicted FI Category']}")
+            else:
+                st.error(f"❌ Missed")
+                st.caption(f"Pred: {data['Predicted FI Category']}")
+                st.caption(f"Actual: {data['Actual FI Category']}")
+
+def calculator_knn_section():
+    st.markdown("""
+        <div style="padding:10px;border-radius:10px">
+            <h2 style="color:white;text-align:center;">K-Nearest Neighbors Food Insecurity Rate Calculator</h2>
+        </div>
+        """, unsafe_allow_html=True)
+    st.write("Enter county and state to get predicted FI category and range.")
+    # Dropdowns
+    data = pd.read_csv('./data/data.csv')
+    states = data['State'].unique()
+    state_name = st.selectbox("State", states)
+    counties = data[data['State'] == state_name]['County'].unique()
+    county_name = st.selectbox("County", counties)
+    if st.button("Get FI Category"):
+        r = predict_county(county_name, state_name)
+        if r is not None:
+            display_prediction_card(r)
+
 # <<<<<<<<<<<<<<<<<<<<<<<< KNN Page <<<<<<<<<<<<<<<<<<<<<<<<<
 
 
@@ -485,6 +711,11 @@ def make_prediction(model, scaler, metadata, input_data):
 
 def calculator_section():
     # Get Model Resources
+    st.markdown("""
+        <div style="padding:10px;border-radius:10px">
+            <h2 style="color:white;text-align:center;">Neural Network Food Insecurity Rate Calculator</h2>
+        </div>
+        """, unsafe_allow_html=True)
     metadata = joblib.load(os.path.join(NN_ARTIFACTS_DIR, "model_metadata.save"))
     scaler = joblib.load(os.path.join(NN_ARTIFACTS_DIR, "scaler.save"))
     input_dim = len(metadata['feature_columns'])
@@ -834,7 +1065,7 @@ def pca_page():
     pcaDF = pd.read_csv(os.path.join(ROOT_DIR, "data", "pcaDF.csv"))
 
     # Visualize clusters in PCA space
-    sns.pairplot(pcaDF, palette='Set2')
+    sns.pairplot(pcaDF, vars=['PC1','PC2','PC3','PC4'], hue='cluster', palette='Set2')
     plt.suptitle("KMeans Clusters on PCA Components", y=1.02)
     st.write("Pairplot of KMeans Clusters on PCA Components")
     st.pyplot(plt)
