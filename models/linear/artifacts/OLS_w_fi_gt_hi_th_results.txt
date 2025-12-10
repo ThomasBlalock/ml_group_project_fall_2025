@@ -1,0 +1,32 @@
+                                OLS Regression Results                                
+======================================================================================
+Dep. Variable:     Child Food Insecurity Rate   R-squared:                       0.493
+Model:                                    OLS   Adj. R-squared:                  0.493
+Method:                         Least Squares   F-statistic:                     3259.
+Date:                        Tue, 02 Dec 2025   Prob (F-statistic):               0.00
+Time:                                16:10:08   Log-Likelihood:                 37862.
+No. Observations:                       20105   AIC:                        -7.571e+04
+Df Residuals:                           20098   BIC:                        -7.565e+04
+Df Model:                                   6                                         
+Covariance Type:                    nonrobust                                         
+===============================================================================================
+                                  coef    std err          t      P>|t|      [0.025      0.975]
+-----------------------------------------------------------------------------------------------
+const                           8.9311      0.267     33.399      0.000       8.407       9.455
+Median Household Income     -2.826e-06   3.39e-08    -83.408      0.000   -2.89e-06   -2.76e-06
+% FI > High Threshold          -0.0165      0.003     -5.303      0.000      -0.023      -0.010
+Low Threshold in state          0.0066      0.001      6.837      0.000       0.005       0.009
+Cost Per Meal                   0.0158      0.001     15.377      0.000       0.014       0.018
+Year                           -0.0043      0.000    -32.364      0.000      -0.005      -0.004
+Percent Population Under 18     0.2562      0.009     29.942      0.000       0.239       0.273
+==============================================================================
+Omnibus:                      540.636   Durbin-Watson:                   1.997
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):             1040.965
+Skew:                          -0.197   Prob(JB):                    9.06e-227
+Kurtosis:                       4.043   Cond. No.                     4.96e+07
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+[2] The condition number is large, 4.96e+07. This might indicate that there are
+strong multicollinearity or other numerical problems.
