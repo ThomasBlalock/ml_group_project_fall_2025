@@ -880,6 +880,8 @@ def nn_page():
         macro_f1 = data['classification_report']['macro avg']['f1-score']
         col3.metric("F1-Score", f"{macro_f1:.4f}")
 
+        st.info("💡 **Note:** Neural Network Uses Last Year's Cluster For Each County As Input Data.")
+
         st.divider()
 
         # --- Visualization Layout ---
