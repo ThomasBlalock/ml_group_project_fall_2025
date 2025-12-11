@@ -855,41 +855,6 @@ def nn_page():
         history = json.load(f)
 
     if model is not None:
-        
-        st.subheader("Training History")
-        
-        # Plotly Interactive Graph
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(y=history['train_loss'], mode='lines', name='Training Loss'))
-        fig.add_trace(go.Scatter(y=history['val_loss'], mode='lines', name='Validation Loss'))
-        
-        fig.update_layout(
-            title='Loss Curve (MSE) Over Epochs',
-            xaxis_title='Epoch',
-            yaxis_title='Mean Squared Error',
-            template='plotly_white',
-            hovermode="x unified"
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-
-        # Plotly Interactive Graph
-        history['log_train_loss'] = np.log(history['train_loss'])
-        history['log_val_loss'] = np.log(history['val_loss'])
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(y=history['log_train_loss'], mode='lines', name='Training Loss'))
-        fig.add_trace(go.Scatter(y=history['log_val_loss'], mode='lines', name='Validation Loss'))
-        
-        fig.update_layout(
-            xaxis_title='Epoch',
-            yaxis_title='Log Mean Squared Error',
-            template='plotly_white',
-            hovermode="x unified"
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-        st.info("Lower loss indicates better model performance. The gap between Training and Validation shows how well the model generalizes.")
-
 
         METRICS_FILE = "models/neural_net/model_artifacts/model_metrics.json"
         with open(METRICS_FILE, 'r') as f:
@@ -983,6 +948,47 @@ def nn_page():
             )
             
             st.info("💡 **Note:** 'Support' refers to the number of actual occurrences of the class in the dataset.")
+        
+        st.subheader("Model Architecture")
+        image_path = os.path.join(ROOT_DIR, "models", "neural_net", "artifacts", "arch.png")
+        image = Image.open(image_path)
+        st.image(image)
+        param_cnt = "17,824"
+        st.info("Total Trainable Parameters: " + param_cnt)
+        
+        st.subheader("Training History")
+        
+        # Plotly Interactive Graph
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(y=history['train_loss'], mode='lines', name='Training Loss'))
+        fig.add_trace(go.Scatter(y=history['val_loss'], mode='lines', name='Validation Loss'))
+        
+        fig.update_layout(
+            title='Loss Curve (MSE) Over Epochs',
+            xaxis_title='Epoch',
+            yaxis_title='Mean Squared Error',
+            template='plotly_white',
+            hovermode="x unified"
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+
+        # Plotly Interactive Graph
+        history['log_train_loss'] = np.log(history['train_loss'])
+        history['log_val_loss'] = np.log(history['val_loss'])
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(y=history['log_train_loss'], mode='lines', name='Training Loss'))
+        fig.add_trace(go.Scatter(y=history['log_val_loss'], mode='lines', name='Validation Loss'))
+        
+        fig.update_layout(
+            xaxis_title='Epoch',
+            yaxis_title='Log Mean Squared Error',
+            template='plotly_white',
+            hovermode="x unified"
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        st.info("Lower loss indicates better model performance. The gap between Training and Validation shows how well the model generalizes.")
 
 # <<<<<<<<<<<<<<<<<<< Neural Network Page <<<<<<<<<<<<<<<<<<<<<
 
