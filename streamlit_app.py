@@ -950,7 +950,7 @@ def nn_page():
             st.info("💡 **Note:** 'Support' refers to the number of actual occurrences of the class in the dataset.")
         
         st.subheader("Model Architecture")
-        image_path = os.path.join(ROOT_DIR, "models", "neural_net", "artifacts", "arch.png")
+        image_path = os.path.join(ROOT_DIR, "models", "neural_net", "model_artifacts", "arch.png")
         image = Image.open(image_path)
         st.image(image)
         param_cnt = "17,824"
