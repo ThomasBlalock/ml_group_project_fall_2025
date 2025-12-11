@@ -1,5 +1,5 @@
-censusdis
-geopandas
+# censusdis
+# geopandas
 graphviz
 joblib
 matplotlib

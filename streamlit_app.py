@@ -51,7 +51,7 @@ def app():
     st.set_page_config(layout="wide")
     st.markdown("""
         <div style="background-color:#025464;padding:10px;border-radius:10px">
-            <h1 style="color:white;text-align:center;">Taking a Byte Out of Food Insecurity</h1>
+            <h1 style="color:white;text-align:center;">Predictive Modelling Approaches to U.S. Food Insecurity</h1>
             <p style="color:white;text-align:center;font-size:0.9em;font-style:italic;margin-top:-10px;margin-bottom:-10px;">
                 Muhammad Amjad &bull; Reed Baumgardner &bull; Thomas Blalock &bull; 
                 Helen Corbat &bull; Max Ellingsen &bull; Harry Millspaugh &bull; John Twomey
@@ -526,20 +526,23 @@ def knn_page():
 
 
 def predict_county(county_name, state_name=None):
+    # 1. Load and Clean Data
     data = pd.read_csv('./data/data.csv')
     data = data.dropna(subset=[col for col in data.columns if col != "Pct_FI_Between_Thresholds"])
+    
+    # 2. Setup Bins and Categories
     bins = [0, 0.115, 0.138, 0.164, 1]  # 1 is just a safe upper bound
     labels = ["Low", "Moderate", "Elevated", "High"]
-
+    
     data["FI_Category"] = pd.cut(
         data["Food_Insecurity_Rate"],
         bins=bins,
         labels=labels,
         include_lowest=True
     )
-
-    data["FI_Category"].value_counts()
-    y=data['FI_Category']
+    
+    # 3. Define Features (X) and Target (y)
+    y = data['FI_Category']
     X = data[['MEDIAN_HOUSEHOLD_INCOME',
             'POP_POVERTY_DETERMINED',
             'POP_BELOW_POVERTY',
@@ -566,11 +569,17 @@ def predict_county(county_name, state_name=None):
         .mean()
         .to_dict()
     )
+
+    # 4. Train Model (on entire dataset as per your snippet)
+    pipe2 = Pipeline([
+        ("scaler", StandardScaler()),
+        ("knn", KNeighborsClassifier(n_neighbors=7, weights="distance"))
+    ])
+    pipe2.fit(X, y)
+
+    # 5. Filter Data for specific County/State
     df = data.copy()
-
-    # Filter by county (case-insensitive)
     mask = df["County"].str.contains(county_name, case=False, na=False)
-
     if state_name:
         mask &= df["State"].str.contains(state_name, case=False, na=False)
 
@@ -578,121 +587,116 @@ def predict_county(county_name, state_name=None):
 
     if matches.empty:
         print("No matching county found.")
-        return
+        return []
 
-    # If we have multiple rows, see if it's really the same county (same FIPS)
-    if len(matches) > 1:
-        unique_fips = matches["FIPS"].nunique()
+    # 6. Iterate through all matching years (rows)
+    results_list = []
+    
+    print(f"Found {len(matches)} records for {county_name}...\n")
 
-        if unique_fips == 1:
-            print("Multiple rows for the same county found. Aggregating features.\n")
-
-            # Aggregate features and actual rate
-            X_row = matches[X.columns].mean().to_frame().T
-            actual = matches["Food_Insecurity_Rate"].mean()
-
-            county = matches["County"].iloc[0]
-            state = matches["State"].iloc[0]
-        else:
-            print("Multiple *different* counties matched your query. Please narrow it down:")
-            # display(matches[["County", "State", "FIPS"]].reset_index(drop=True))
-            return
-    else:
-        row = matches.iloc[0]
+    for index, row in matches.iterrows():
+        # Extract features for this specific year/row
         X_row = row[X.columns].to_frame().T
         actual = row["Food_Insecurity_Rate"]
         county = row["County"]
         state = row["State"]
+        # Try to get Year if it exists, otherwise use index
+        year = row.get("YEAR", "Unknown Year") 
 
-    pipe2 = Pipeline([
-        ("scaler", StandardScaler()),
-        ("knn", KNeighborsClassifier(n_neighbors=7,
-        weights="distance"))
-    ])
+        # --- MODEL PREDICTION ---
+        pred_cat = pipe2.predict(X_row)[0]
+        pred_cat_str = str(pred_cat)
+        pred_rate = cat_mean_rate[pred_cat]
 
-    pipe2.fit(X, y)
+        # Actual category
+        actual_cat = pd.cut(
+            pd.Series([actual]),
+            bins=bins,
+            labels=labels,
+            include_lowest=True
+        ).iloc[0]
+        actual_cat_str = str(actual_cat)
 
-    # --- MODEL PREDICTION ---
-    pred_cat = pipe2.predict(X_row)[0]
-    pred_cat_str = str(pred_cat)
+        # Print output for console debugging
+        print(f"--- {year} ---")
+        print(f"Pred: {pred_cat_str} ({pred_rate:.3f}) | Actual: {actual:.3f}")
 
-    # Predicted numeric rate = mean FI rate for that category in the data
-    pred_rate = cat_mean_rate[pred_cat]
+        # Append to results list
+        results_list.append({
+            "County": county,
+            "State": state,
+            "Year": year,  # Added Year to dictionary
+            "Predicted FI Category": pred_cat_str,
+            "Predicted FI Rate": pred_rate,
+            "Category Range": category_ranges[pred_cat_str],
+            "Actual FI Rate": actual,
+            "Actual FI Category": actual_cat_str
+        })
 
-    # Actual category from actual numeric rate
-    actual_cat = pd.cut(
-        pd.Series([actual]),
-        bins=bins,
-        labels=labels,
-        include_lowest=True
-    ).iloc[0]
-    actual_cat_str = str(actual_cat)
+    return results_list
 
-    # --- OUTPUT ---
-    print(f"County: {county}, {state}")
-    print()
-    print(f"Predicted FI Category: {pred_cat_str}")
-    print(f"  • Approx. predicted FI rate (category mean): {pred_rate:.3f}")
-    print(f"  • Category range: {category_ranges[pred_cat_str]}")
-    print()
-    print(f"Actual FI rate from dataset: {actual:.3f}")
-    print(f"  • Actual FI category (using same bins): {actual_cat_str}")
 
-    return {
-        "County": county,
-        "State": state,
-        "Predicted FI Category": pred_cat_str,
-        "Predicted FI Rate": pred_rate,
-        "Category Range": category_ranges[pred_cat_str],
-        "Actual FI Rate": actual,
-        "Actual FI Category": actual_cat_str
-    }
+def display_prediction_card(data_list):
+    """
+    Accepts a list of dictionaries (one per year) and displays them.
+    """
+    if not data_list:
+        st.error("No data available to display.")
+        return
 
-def display_prediction_card(data):
-    # Container to hold the styling
-    with st.container(border=True):
+    # Loop through the list of results
+    for data in data_list:
         
-        # Header: County and State
-        st.markdown(f"### 📍 {data['County']}, {data['State']}")
-        st.divider()
-
-        # Layout: 3 Columns for Metrics
-        col1, col2, col3 = st.columns(3)
-
-        # Calculate Error (Delta)
-        # Assuming rates are floats. If they are 0.14, multiply by 100 for display
-        pred_val = data['Predicted FI Rate']
-        actual_val = data['Actual FI Rate']
-        delta = round(pred_val - actual_val, 2)
-
-        # Column 1: The Prediction
-        with col1:
-            st.metric(
-                label="Predicted Rate",
-                value=f"{pred_val}%",
-                delta=f"{delta}% Error",
-                delta_color="inverse" # Red if positive (overestimate), Green if negative (underestimate)
-            )
-            st.caption(f"Range: {data['Category Range']}")
-
-        # Column 2: The Ground Truth
-        with col2:
-            st.metric(
-                label="Actual Rate",
-                value=f"{actual_val}%"
-            )
-
-        # Column 3: Category Match Status
-        with col3:
-            is_match = data['Predicted FI Category'] == data['Actual FI Category']
+        # Container to hold the styling
+        with st.container(border=True):
             
-            st.markdown("**Category Accuracy**")
-            if is_match:
-                st.success(f"✅ Match: {data['Predicted FI Category']}")
-            else:
-                st.error(f"❌ Missed")
-                st.caption(f"Pred: {data['Predicted FI Category']}")
-                st.caption(f"Actual: {data['Actual FI Category']}")
+            # Header: County, State AND Year
+            year_display = f"({data.get('Year', 'N/A')})"
+            st.markdown(f"### 📍 {data['County']}, {data['State']} {year_display}")
+            st.divider()
+
+            # Layout: 3 Columns for Metrics
+            col1, col2, col3 = st.columns(3)
+
+            # Calculate Error (Delta)
+            pred_val = data['Predicted FI Rate']
+            actual_val = data['Actual FI Rate']
+            
+            # Formatting assumption: If rate is 0.15, display as 15.0%
+            # If your data is already 15.0, remove the (* 100) below.
+            display_pred = pred_val * 100
+            display_actual = actual_val * 100
+            
+            delta = round(display_pred - display_actual, 2)
+
+            # Column 1: The Prediction
+            with col1:
+                st.metric(
+                    label="Predicted Rate",
+                    value=f"{display_pred:.1f}%",
+                    delta=f"{delta}% Error",
+                    delta_color="inverse" 
+                )
+                st.caption(f"Range: {data['Category Range']}")
+
+            # Column 2: The Ground Truth
+            with col2:
+                st.metric(
+                    label="Actual Rate",
+                    value=f"{display_actual:.1f}%"
+                )
+
+            # Column 3: Category Match Status
+            with col3:
+                is_match = data['Predicted FI Category'] == data['Actual FI Category']
+                
+                st.markdown("**Category Accuracy**")
+                if is_match:
+                    st.success(f"✅ Match: {data['Predicted FI Category']}")
+                else:
+                    st.error(f"❌ Missed")
+                    st.caption(f"Pred: {data['Predicted FI Category']}")
+                    st.caption(f"Actual: {data['Actual FI Category']}")
 
 def calculator_knn_section():
     st.markdown("""
@@ -707,6 +711,7 @@ def calculator_knn_section():
     state_name = st.selectbox("State", states)
     counties = data[data['State'] == state_name]['County'].unique()
     county_name = st.selectbox("County", counties)
+        
     if st.button("Get FI Category"):
         r = predict_county(county_name, state_name)
         if r is not None:
