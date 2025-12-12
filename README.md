@@ -75,8 +75,7 @@ To run this project locally, follow these steps:
 
 1.  **Clone the repository**
     ```bash
-    git clone [https://github.com/your-username/food-insecurity-project.git](https://github.com/your-username/food-insecurity-project.git)
-    cd food-insecurity-project
+    git clone https://github.com/ThomasBlalock/ml_group_project_fall_2025
     ```
 
 2.  **Install Dependencies**
