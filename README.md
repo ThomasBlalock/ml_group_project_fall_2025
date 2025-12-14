@@ -1,4 +1,4 @@
-# Taking a Byte Out of Food Insecurity 🍽️
+# Predictive Modeling Approaches to U.S. Food Insecurity 🍽️
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://taking-a-byte-out-of-food-insecurity.streamlit.app/)
 [![Python](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org/)
@@ -7,7 +7,7 @@
 **University of Virginia • Master of Data Science • Fall 2025**
 *Predictive Modeling I Group Project*
 
-### 🚀 **[View the Deployed Dashboard](https://taking-a-byte-out-of-food-insecurity.streamlit.app/)**
+### 🚀 **[View the Deployed Dashboard](https://predictive-modelling-approaches-to-us-food-insecurity.streamlit.app/)**
 
 ---
 
